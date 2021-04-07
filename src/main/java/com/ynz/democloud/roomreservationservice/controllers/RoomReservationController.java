@@ -8,6 +8,7 @@ import com.ynz.democloud.roomreservationservice.domain.Room;
 import com.ynz.democloud.roomreservationservice.domain.RoomReservation;
 import com.ynz.democloud.roomreservationservice.exceptions.InvalidDateFormat;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +21,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/roomReservations")
 @RequiredArgsConstructor
+@Slf4j
 public class RoomReservationController {
     private final RoomClient roomClient;
     private final GuestClient guestClient;
@@ -37,11 +38,11 @@ public class RoomReservationController {
     private final RestTemplate restTemplate;
 
     @GetMapping
-    public ResponseEntity<List<RoomReservation>> getRoomReservations(@RequestParam(name = "date", required = true) String restDate) {
+    public ResponseEntity<List<RoomReservation>> getRoomReservationsByDate(@RequestParam(name = "date") String restDate) {
         validateStringDate(restDate);
 
         Map<Long, Room> roomIdRoomMap = roomClient.getAllRooms().stream()
-                .collect(Collectors.toMap(k -> k.getId(), v -> v, (o, n) -> n, TreeMap::new));
+                .collect(Collectors.toMap(Room::getId, v -> v, (o, n) -> n, TreeMap::new));
 
         List<RoomReservation> roomReservations = new ArrayList<>();
 
@@ -70,22 +71,12 @@ public class RoomReservationController {
         return ResponseEntity.ok(roomReservations);
     }
 
-    private Date convertStringToDate(String date) {
-        Date convertedDate;
-
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        try {
-            convertedDate = df.parse(date);
-        } catch (ParseException e) {
-
-            throw new IllegalArgumentException(e.getMessage());
-        }
-
-        return convertedDate;
-    }
-
     private List<Reservation> askForReservationByDate(String date) {
-        String uri = "http://RESERVATIONSERVICES/reservations/dates/" + date;
+        String uri = new StringBuilder("http://RESERVATIONSERVICES/reservations")
+                .append("?date=").append(date).toString();
+
+        log.info(uri);
+
         ResponseEntity<Reservation[]> responseEntity = this.restTemplate.getForEntity(uri, Reservation[].class);
         return Arrays.asList(Objects.requireNonNull(responseEntity.getBody()));
     }
