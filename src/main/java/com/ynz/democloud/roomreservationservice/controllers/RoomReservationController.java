@@ -62,7 +62,7 @@ public class RoomReservationController {
                     .firstName(guest.getFirstName())
                     .lastName(guest.getLastName())
                     .guestId(reservation.getGuestId())
-                    .date(reservation.getRestDate().toString())
+                    .date(reservation.getRestDate())
                     .build();
 
             roomReservations.add(roomReservation);
